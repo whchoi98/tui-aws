@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"tui-ssm/internal/aws"
 	"tui-ssm/internal/store"
 )
@@ -57,7 +58,7 @@ func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *s
 	// Header
 	header := renderRow(columns, func(col Column) string {
 		return col.Title
-	})
+	}, nil)
 	b.WriteString(TableHeaderStyle.Width(width).Render(header))
 	b.WriteString("\n")
 
@@ -77,6 +78,8 @@ func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *s
 		inst := instances[i]
 		row := renderRow(columns, func(col Column) string {
 			return cellValue(col.Key, inst, favs, hist, profile, region)
+		}, func(col Column) lipgloss.Style {
+			return cellStyle(col.Key, inst, favs, hist, profile, region)
 		})
 
 		if i == cursor {
@@ -91,36 +94,45 @@ func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *s
 	return b.String()
 }
 
-func renderRow(columns []Column, getValue func(Column) string) string {
+func renderRow(columns []Column, getText func(Column) string, styleFn func(Column) lipgloss.Style) string {
 	var parts []string
 	for _, col := range columns {
-		val := getValue(col)
+		val := getText(col)
+		// Truncate raw text (no ANSI codes yet)
 		if len(val) > col.Width {
 			val = val[:col.Width-1] + "…"
 		}
-		parts = append(parts, fmt.Sprintf("%-*s", col.Width, val))
+		padded := fmt.Sprintf("%-*s", col.Width, val)
+		// Apply style after truncation/padding so ANSI codes don't break layout
+		if styleFn != nil {
+			if style := styleFn(col); style.GetForeground() != nil {
+				padded = style.Render(padded)
+			}
+		}
+		parts = append(parts, padded)
 	}
 	return strings.Join(parts, " ")
 }
 
+// cellValue returns raw text without ANSI styling.
 func cellValue(key string, inst aws.Instance, favs *store.Favorites, hist *store.History, profile, region string) string {
 	switch key {
 	case "fav":
 		if favs != nil && favs.IsFavorite(inst.InstanceID, profile, region) {
-			return FavoriteStyle.Render("★")
+			return "★"
 		}
 		if hist != nil && hist.IsRecent(inst.InstanceID, profile, region) {
-			return RecentStyle.Render("⏱")
+			return "⏱"
 		}
 		return " "
 	case "state_icon":
-		return StateStyle(inst.State).Render(inst.StateIcon())
+		return inst.StateIcon()
 	case "name":
 		return inst.DisplayName()
 	case "id":
 		return inst.InstanceID
 	case "state":
-		return StateStyle(inst.State).Render(inst.State)
+		return inst.State
 	case "private_ip":
 		return inst.PrivateIP
 	case "public_ip":
@@ -142,6 +154,22 @@ func cellValue(key string, inst aws.Instance, favs *store.Favorites, hist *store
 	default:
 		return ""
 	}
+}
+
+// cellStyle returns the lipgloss style for a given column and instance.
+func cellStyle(key string, inst aws.Instance, favs *store.Favorites, hist *store.History, profile, region string) lipgloss.Style {
+	switch key {
+	case "fav":
+		if favs != nil && favs.IsFavorite(inst.InstanceID, profile, region) {
+			return FavoriteStyle
+		}
+		if hist != nil && hist.IsRecent(inst.InstanceID, profile, region) {
+			return RecentStyle
+		}
+	case "state_icon", "state":
+		return StateStyle(inst.State)
+	}
+	return lipgloss.Style{}
 }
 
 func SortInstances(instances []aws.Instance, favs *store.Favorites, hist *store.History, profile, region, sortBy, sortOrder string) []aws.Instance {

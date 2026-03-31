@@ -1,10 +1,11 @@
-package ui
+package shared
 
 import (
 	"fmt"
 	"strings"
 )
 
+// SelectorModel is a generic list picker for profiles, regions, etc.
 type SelectorModel struct {
 	Title  string
 	Items  []string
@@ -12,6 +13,7 @@ type SelectorModel struct {
 	Active bool
 }
 
+// NewSelector creates a SelectorModel with the cursor on the current item.
 func NewSelector(title string, items []string, current string) SelectorModel {
 	cursor := 0
 	for i, item := range items {
@@ -79,5 +81,5 @@ func (s *SelectorModel) Render(width int) string {
 	}
 	b.WriteString("\n  Enter: select  Esc: cancel")
 
-	return OverlayStyle.Render(b.String())
+	return RenderOverlay(b.String())
 }

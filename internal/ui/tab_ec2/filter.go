@@ -1,10 +1,13 @@
-package ui
+package tab_ec2
 
 import (
 	"fmt"
 	"strings"
+
+	"tui-aws/internal/ui/shared"
 )
 
+// FilterModel manages the state filter checkboxes.
 type FilterModel struct {
 	States       []string
 	ActiveStates map[string]bool
@@ -75,10 +78,10 @@ func (f *FilterModel) Render(width int) string {
 		if f.ActiveStates[state] {
 			check = "[✓]"
 		}
-		icon := StateStyle(state).Render(fmt.Sprintf("%-12s", state))
+		icon := shared.StateStyle(state).Render(fmt.Sprintf("%-12s", state))
 		b.WriteString(fmt.Sprintf("  %s%s %s\n", cursor, check, icon))
 	}
 	b.WriteString("\n  Space: toggle  c: clear all  Esc: close")
 
-	return OverlayStyle.Render(b.String())
+	return shared.RenderOverlay(b.String())
 }

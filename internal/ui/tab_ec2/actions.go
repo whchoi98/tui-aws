@@ -1,17 +1,20 @@
-package ui
+package tab_ec2
 
 import (
 	"fmt"
 	"strings"
 
 	"tui-aws/internal/aws"
+	"tui-aws/internal/ui/shared"
 )
 
+// Action represents a menu action for an instance.
 type Action struct {
 	Key   string
 	Label string
 }
 
+// ActionMenuModel manages the action menu state.
 type ActionMenuModel struct {
 	Active   bool
 	Instance aws.Instance
@@ -19,6 +22,15 @@ type ActionMenuModel struct {
 	Cursor   int
 }
 
+// PortForwardModel manages the port forwarding input state.
+type PortForwardModel struct {
+	Active     bool
+	LocalPort  string
+	RemotePort string
+	Field      int // 0 = local, 1 = remote
+}
+
+// NewActionMenu creates an ActionMenuModel for the given instance.
 func NewActionMenu(inst aws.Instance) ActionMenuModel {
 	return ActionMenuModel{
 		Active:   true,
@@ -69,9 +81,10 @@ func (a *ActionMenuModel) Render(width int) string {
 	}
 	b.WriteString("\n  Enter: select  Esc: cancel")
 
-	return OverlayStyle.Render(b.String())
+	return shared.RenderOverlay(b.String())
 }
 
+// RenderSecurityGroups renders the security groups overlay.
 func RenderSecurityGroups(inst aws.Instance) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("  Security Groups — %s\n", inst.DisplayName()))
@@ -85,9 +98,10 @@ func RenderSecurityGroups(inst aws.Instance) string {
 		}
 	}
 	b.WriteString("\n  Press any key to close")
-	return OverlayStyle.Render(b.String())
+	return shared.RenderOverlay(b.String())
 }
 
+// RenderInstanceDetail renders the instance detail overlay.
 func RenderInstanceDetail(inst aws.Instance) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("  Instance Details — %s\n", inst.DisplayName()))
@@ -135,5 +149,5 @@ func RenderInstanceDetail(inst aws.Instance) string {
 		b.WriteString(fmt.Sprintf("  SG:         %s\n", strings.Join(inst.SecurityGroups, ", ")))
 	}
 	b.WriteString("\n  Press any key to close")
-	return OverlayStyle.Render(b.String())
+	return shared.RenderOverlay(b.String())
 }

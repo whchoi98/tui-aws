@@ -1,4 +1,4 @@
-package ui
+package tab_ec2
 
 import (
 	"testing"

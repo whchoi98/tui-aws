@@ -1,4 +1,4 @@
-package ui
+package shared
 
 import "charm.land/lipgloss/v2"
 
@@ -22,6 +22,19 @@ var (
 	HelpKeyStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#83a598")).
 			Bold(true)
+
+	// Tab bar
+	TabBarStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("#3c3836")).
+			Foreground(lipgloss.Color("#a89984")).
+			Padding(0, 1)
+
+	TabActiveStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ebdbb2")).
+			Bold(true)
+
+	TabInactiveStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#928374"))
 
 	// Table
 	TableHeaderStyle = lipgloss.NewStyle().
@@ -63,6 +76,7 @@ var (
 				Bold(true)
 )
 
+// StateStyle returns the lipgloss style for a given instance state.
 func StateStyle(state string) lipgloss.Style {
 	switch state {
 	case "running":

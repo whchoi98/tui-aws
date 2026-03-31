@@ -41,9 +41,13 @@ func CheckPrerequisites() []PrereqResult {
 	return results
 }
 
+func needsProfileFlag(profile string) bool {
+	return profile != "" && profile != "default" && profile != InstanceRoleProfile
+}
+
 func BuildSSMSessionArgs(instanceID, profile, region string) []string {
 	args := []string{"ssm", "start-session", "--target", instanceID}
-	if profile != "" && profile != "default" {
+	if needsProfileFlag(profile) {
 		args = append(args, "--profile", profile)
 	}
 	args = append(args, "--region", region)
@@ -57,7 +61,7 @@ func BuildPortForwardArgs(instanceID, profile, region, localPort, remotePort str
 		"--document-name", "AWS-StartPortForwardingSession",
 		"--parameters", fmt.Sprintf("portNumber=%s,localPortNumber=%s", remotePort, localPort),
 	}
-	if profile != "" && profile != "default" {
+	if needsProfileFlag(profile) {
 		args = append(args, "--profile", profile)
 	}
 	args = append(args, "--region", region)

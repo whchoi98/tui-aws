@@ -22,7 +22,8 @@ func NewClients(ctx context.Context, profile, region string) (*Clients, error) {
 	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(region),
 	}
-	if profile != "" && profile != "default" {
+	// Instance role and "default" use the default credential chain (no explicit profile)
+	if profile != "" && profile != "default" && profile != InstanceRoleProfile {
 		opts = append(opts, config.WithSharedConfigProfile(profile))
 	}
 

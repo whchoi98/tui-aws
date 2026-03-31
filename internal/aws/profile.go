@@ -18,6 +18,10 @@ func DefaultConfigPath() string {
 	return filepath.Join(home, ".aws", "config")
 }
 
+// InstanceRoleProfile is a sentinel value representing the EC2 instance's
+// IAM role (no explicit --profile flag needed).
+const InstanceRoleProfile = "(instance role)"
+
 func ParseProfiles(credentialsPath, configPath string) []string {
 	seen := map[string]bool{}
 	for _, name := range parseSections(credentialsPath, false) {
@@ -26,12 +30,13 @@ func ParseProfiles(credentialsPath, configPath string) []string {
 	for _, name := range parseSections(configPath, true) {
 		seen[name] = true
 	}
-	profiles := make([]string, 0, len(seen))
+	named := make([]string, 0, len(seen))
 	for name := range seen {
-		profiles = append(profiles, name)
+		named = append(named, name)
 	}
-	sort.Strings(profiles)
-	return profiles
+	sort.Strings(named)
+	// Prepend instance role option so it appears first in the selector
+	return append([]string{InstanceRoleProfile}, named...)
 }
 
 func parseSections(path string, isConfig bool) []string {

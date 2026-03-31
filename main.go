@@ -51,14 +51,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Parse AWS profiles
+	// Parse AWS profiles (always includes "(instance role)" for EC2 IAM roles)
 	profiles := internalaws.ParseProfiles(
 		internalaws.DefaultCredentialsPath(),
 		internalaws.DefaultConfigPath(),
 	)
-	if len(profiles) == 0 {
-		profiles = []string{"default"}
-	}
 
 	// Create and run TUI
 	model := ui.NewModel(cfg, profiles, favs, hist)

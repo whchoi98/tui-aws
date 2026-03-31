@@ -34,7 +34,19 @@ func TestParseProfiles(t *testing.T) {
 
 func TestParseProfilesMissingFiles(t *testing.T) {
 	profiles := ParseProfiles("/nonexistent/creds", "/nonexistent/config")
-	if len(profiles) != 0 {
-		t.Errorf("expected 0 profiles for missing files, got %d", len(profiles))
+	// Should contain only the instance role sentinel
+	if len(profiles) != 1 || profiles[0] != InstanceRoleProfile {
+		t.Errorf("expected only [%q] for missing files, got %v", InstanceRoleProfile, profiles)
+	}
+}
+
+func TestParseProfilesIncludesInstanceRole(t *testing.T) {
+	dir := t.TempDir()
+	credPath := filepath.Join(dir, "credentials")
+	os.WriteFile(credPath, []byte("[myprofile]\naws_access_key_id = AKIA\n"), 0o644)
+
+	profiles := ParseProfiles(credPath, "/nonexistent/config")
+	if profiles[0] != InstanceRoleProfile {
+		t.Errorf("expected first profile to be %q, got %q", InstanceRoleProfile, profiles[0])
 	}
 }

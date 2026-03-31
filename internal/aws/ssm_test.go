@@ -31,6 +31,15 @@ func TestBuildSSMCommandDefaultProfile(t *testing.T) {
 	}
 }
 
+func TestBuildSSMCommandInstanceRole(t *testing.T) {
+	args := BuildSSMSessionArgs("i-abc123", InstanceRoleProfile, "us-east-1")
+	for _, arg := range args {
+		if arg == "--profile" {
+			t.Error("instance role should not include --profile flag")
+		}
+	}
+}
+
 func TestBuildPortForwardArgs(t *testing.T) {
 	args := BuildPortForwardArgs("i-abc123", "production", "ap-northeast-2", "8080", "80")
 	found := map[string]bool{}

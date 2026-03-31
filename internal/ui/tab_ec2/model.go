@@ -442,6 +442,18 @@ func (m *EC2Model) updateActionMenu(msg tea.Msg, s *shared.SharedState) (shared.
 			m.showDetail = "sg"
 		case "detail":
 			m.showDetail = "detail"
+		case "goto_vpc":
+			m.actionMenu.Active = false
+			m.viewState = vsTable
+			return m, func() tea.Msg {
+				return shared.NavigateToTab{Tab: shared.TabVPC}
+			}
+		case "goto_subnet":
+			m.actionMenu.Active = false
+			m.viewState = vsTable
+			return m, func() tea.Msg {
+				return shared.NavigateToTab{Tab: shared.TabSubnet}
+			}
 		}
 	}
 	return m, nil

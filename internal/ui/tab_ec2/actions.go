@@ -40,6 +40,8 @@ func NewActionMenu(inst aws.Instance) ActionMenuModel {
 			{Key: "portfwd", Label: "Port Forwarding"},
 			{Key: "sg", Label: "Security Groups"},
 			{Key: "detail", Label: "Instance Details"},
+			{Key: "goto_vpc", Label: "Go to VPC"},
+			{Key: "goto_subnet", Label: "Go to Subnet"},
 		},
 		Cursor: 0,
 	}

@@ -14,6 +14,8 @@ import (
 	"tui-aws/internal/store"
 	"tui-aws/internal/ui/shared"
 	"tui-aws/internal/ui/tab_ec2"
+	"tui-aws/internal/ui/tab_subnet"
+	"tui-aws/internal/ui/tab_vpc"
 )
 
 // ssmExecCmd wraps exec.Cmd to reset the terminal and flush the input
@@ -98,6 +100,10 @@ func NewRootModel(cfg config.Config, profiles []string, favs *store.Favorites, h
 		switch id {
 		case shared.TabEC2:
 			tabs[i] = tab_ec2.New(cfg.Table.SortBy, cfg.Table.SortOrder)
+		case shared.TabVPC:
+			tabs[i] = tab_vpc.New()
+		case shared.TabSubnet:
+			tabs[i] = tab_subnet.New()
 		default:
 			tabs[i] = NewPlaceholderTab(id.Label())
 		}

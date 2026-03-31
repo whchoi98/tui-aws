@@ -1,23 +1,18 @@
-package ui
+package tab_ec2
 
 import (
 	"sort"
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi"
-	"tui-ssm/internal/aws"
-	"tui-ssm/internal/store"
+	"tui-aws/internal/aws"
+	"tui-aws/internal/store"
+	"tui-aws/internal/ui/shared"
 )
 
-type Column struct {
-	Key   string
-	Title string
-	Width int
-}
-
-func DefaultColumns() []Column {
-	return []Column{
+// DefaultColumns returns the full set of table columns.
+func DefaultColumns() []shared.Column {
+	return []shared.Column{
 		{Key: "fav", Title: " ", Width: 2},
 		{Key: "state_icon", Title: " ", Width: 2},
 		{Key: "name", Title: "Name", Width: 20},
@@ -35,8 +30,9 @@ func DefaultColumns() []Column {
 	}
 }
 
-func CompactColumns() []Column {
-	return []Column{
+// CompactColumns returns a minimal set of columns for narrow terminals.
+func CompactColumns() []shared.Column {
+	return []shared.Column{
 		{Key: "fav", Title: " ", Width: 2},
 		{Key: "state_icon", Title: " ", Width: 2},
 		{Key: "name", Title: "Name", Width: 20},
@@ -45,21 +41,23 @@ func CompactColumns() []Column {
 	}
 }
 
-func ColumnsForWidth(width int) []Column {
+// ColumnsForWidth returns the appropriate column set for the given terminal width.
+func ColumnsForWidth(width int) []shared.Column {
 	if width < 80 {
 		return CompactColumns()
 	}
 	return DefaultColumns()
 }
 
-func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *store.Favorites, hist *store.History, profile, region string, width, height int) string {
+// RenderTable renders the EC2 instance table with header, rows, and scrolling.
+func RenderTable(instances []aws.Instance, columns []shared.Column, cursor int, favs *store.Favorites, hist *store.History, profile, region string, width, height int) string {
 	var b strings.Builder
 
 	// Header
-	header := renderRow(columns, func(col Column) string {
+	header := shared.RenderRow(columns, func(col shared.Column) string {
 		return col.Title
 	}, nil)
-	b.WriteString(TableHeaderStyle.Width(width).Render(header))
+	b.WriteString(shared.TableHeaderStyle.Width(width).Render(header))
 	b.WriteString("\n")
 
 	// Available rows: total height minus statusbar(1) + helpbar(1) + header(1) + possible search(1)
@@ -76,14 +74,14 @@ func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *s
 
 	for i := offset; i < len(instances) && i < offset+maxRows; i++ {
 		inst := instances[i]
-		row := renderRow(columns, func(col Column) string {
+		row := shared.RenderRow(columns, func(col shared.Column) string {
 			return cellValue(col.Key, inst, favs, hist, profile, region)
-		}, func(col Column) lipgloss.Style {
+		}, func(col shared.Column) lipgloss.Style {
 			return cellStyle(col.Key, inst, favs, hist, profile, region)
 		})
 
 		if i == cursor {
-			row = TableSelectedStyle.Width(width).Render(row)
+			row = shared.TableSelectedStyle.Width(width).Render(row)
 		}
 		b.WriteString(row)
 		if i < offset+maxRows-1 && i < len(instances)-1 {
@@ -92,31 +90,6 @@ func RenderTable(instances []aws.Instance, columns []Column, cursor int, favs *s
 	}
 
 	return b.String()
-}
-
-func renderRow(columns []Column, getText func(Column) string, styleFn func(Column) lipgloss.Style) string {
-	var parts []string
-	for _, col := range columns {
-		val := getText(col)
-		// Truncate using terminal cell width (handles wide chars like ★, ●, 한글)
-		w := lipgloss.Width(val)
-		if w > col.Width {
-			val = ansi.Truncate(val, col.Width-1, "…")
-			w = lipgloss.Width(val)
-		}
-		// Pad with spaces to fill column width (cell-width aware)
-		if pad := col.Width - w; pad > 0 {
-			val += strings.Repeat(" ", pad)
-		}
-		// Apply style after truncation/padding so ANSI codes don't break layout
-		if styleFn != nil {
-			if style := styleFn(col); style.GetForeground() != nil {
-				val = style.Render(val)
-			}
-		}
-		parts = append(parts, val)
-	}
-	return strings.Join(parts, " ")
 }
 
 // cellValue returns raw text without ANSI styling.
@@ -166,17 +139,18 @@ func cellStyle(key string, inst aws.Instance, favs *store.Favorites, hist *store
 	switch key {
 	case "fav":
 		if favs != nil && favs.IsFavorite(inst.InstanceID, profile, region) {
-			return FavoriteStyle
+			return shared.FavoriteStyle
 		}
 		if hist != nil && hist.IsRecent(inst.InstanceID, profile, region) {
-			return RecentStyle
+			return shared.RecentStyle
 		}
 	case "state_icon", "state":
-		return StateStyle(inst.State)
+		return shared.StateStyle(inst.State)
 	}
 	return lipgloss.Style{}
 }
 
+// SortInstances sorts instances by favorites, then recent history, then user-selected sort.
 func SortInstances(instances []aws.Instance, favs *store.Favorites, hist *store.History, profile, region, sortBy, sortOrder string) []aws.Instance {
 	sorted := make([]aws.Instance, len(instances))
 	copy(sorted, instances)
@@ -219,6 +193,7 @@ func SortInstances(instances []aws.Instance, favs *store.Favorites, hist *store.
 	return sorted
 }
 
+// FilterBySearch filters instances by name, ID, or private IP.
 func FilterBySearch(instances []aws.Instance, query string) []aws.Instance {
 	if query == "" {
 		return instances
@@ -235,6 +210,7 @@ func FilterBySearch(instances []aws.Instance, query string) []aws.Instance {
 	return result
 }
 
+// FilterByState filters instances by their state.
 func FilterByState(instances []aws.Instance, states map[string]bool) []aws.Instance {
 	if len(states) == 0 {
 		return instances

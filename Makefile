@@ -1,6 +1,6 @@
 .PHONY: build build-all install clean test
 
-BINARY := tui-ssm
+BINARY := tui-aws
 VERSION := 0.1.0
 
 build:

@@ -78,5 +78,5 @@ func (f *Favorites) IsFavorite(instanceID, profile, region string) bool {
 
 func FavoritesPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".tui-ssm", "favorites.json")
+	return filepath.Join(home, ".tui-aws", "favorites.json")
 }

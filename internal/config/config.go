@@ -37,7 +37,7 @@ func DefaultConfig() Config {
 
 func Dir() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".tui-ssm")
+	return filepath.Join(home, ".tui-aws")
 }
 
 func Path() string {

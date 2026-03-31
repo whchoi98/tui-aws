@@ -72,5 +72,5 @@ func (h *History) IsRecent(instanceID, profile, region string) bool {
 
 func HistoryPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".tui-ssm", "history.json")
+	return filepath.Join(home, ".tui-aws", "history.json")
 }

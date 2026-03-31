@@ -1,4 +1,4 @@
-module tui-ssm
+module tui-aws
 
 go 1.25.0
 

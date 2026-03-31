@@ -10,32 +10,53 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"golang.org/x/sys/unix"
 	internalaws "tui-ssm/internal/aws"
 	"tui-ssm/internal/config"
 	"tui-ssm/internal/store"
 )
 
-// ssmExecCmd wraps exec.Cmd to reset the terminal after SSM session exits.
-// The session-manager-plugin alters terminal state (raw mode, PTY settings)
-// which can prevent Bubble Tea's RestoreTerminal from working correctly.
+// ssmExecCmd wraps exec.Cmd to reset the terminal and flush the input
+// buffer after SSM session exits. Without this, the session-manager-plugin
+// can leave the terminal in a broken state and residual bytes in stdin
+// that cause Bubble Tea's input parser to error, terminating the program.
 type ssmExecCmd struct {
 	cmd *exec.Cmd
 }
 
 func (c *ssmExecCmd) Run() error {
 	err := c.cmd.Run()
-	// Reset terminal to a sane state before Bubble Tea tries to restore.
-	// This fixes the issue where SSM's session-manager-plugin leaves
-	// the terminal in a broken state after session exit.
+
+	// 1. Reset terminal to a sane state before Bubble Tea tries to restore.
 	reset := exec.Command("stty", "sane")
 	reset.Stdin = os.Stdin
 	reset.Run() //nolint:errcheck
+
+	// 2. Flush the stdin input buffer to discard any residual bytes
+	//    left by the session-manager-plugin. Without this, stale escape
+	//    sequences can cause Bubble Tea's StreamEvents parser to error,
+	//    which sends to p.errs and terminates the event loop.
+	unix.IoctlSetInt(int(os.Stdin.Fd()), unix.TCFLSH, unix.TCIFLUSH) //nolint:errcheck
+
 	return err
 }
 
 func (c *ssmExecCmd) SetStdin(r io.Reader)  { c.cmd.Stdin = r }
 func (c *ssmExecCmd) SetStdout(w io.Writer) { c.cmd.Stdout = w }
 func (c *ssmExecCmd) SetStderr(w io.Writer) { c.cmd.Stderr = w }
+
+// InterruptFilter prevents SIGINT (delivered as InterruptMsg) from
+// terminating the program. In raw mode Ctrl+C is delivered as a
+// KeyPressMsg("ctrl+c") which our Update handles directly.
+// InterruptMsg only arrives from OS signals — typically from a race
+// between exec's RestoreTerminal re-enabling signals and a stale
+// SIGINT from the SSM child process group.
+func InterruptFilter(_ tea.Model, msg tea.Msg) tea.Msg {
+	if _, ok := msg.(tea.InterruptMsg); ok {
+		return nil
+	}
+	return msg
+}
 
 // Messages
 type instancesLoadedMsg struct {

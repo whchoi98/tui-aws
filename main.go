@@ -62,7 +62,7 @@ func main() {
 
 	// Create and run TUI
 	model := ui.NewModel(cfg, profiles, favs, hist)
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithFilter(ui.InterruptFilter))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

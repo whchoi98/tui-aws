@@ -297,7 +297,7 @@ func (m Model) updateSearch(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch keyMsg.String() {
-	case "escape":
+	case "esc":
 		m.search.Clear()
 		m.viewState = ViewTable
 		m.applyFilters()
@@ -328,7 +328,7 @@ func (m Model) updateFilter(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch keyMsg.String() {
-	case "escape", "f":
+	case "esc", "f":
 		m.filter.Active = false
 		m.viewState = ViewTable
 		m.applyFilters()
@@ -353,7 +353,7 @@ func (m Model) updateProfileSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch keyMsg.String() {
-	case "escape":
+	case "esc":
 		m.profSelect.Active = false
 		m.viewState = ViewTable
 	case "up", "k":
@@ -377,7 +377,7 @@ func (m Model) updateRegionSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch keyMsg.String() {
-	case "escape":
+	case "esc":
 		m.regionSelect.Active = false
 		m.viewState = ViewTable
 	case "up", "k":
@@ -401,7 +401,7 @@ func (m Model) updatePortForward(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch keyMsg.String() {
-	case "escape":
+	case "esc":
 		m.portForward.Active = false
 		m.viewState = ViewTable
 	case "tab":

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -16,6 +17,22 @@ import (
 	"tui-ssm/internal/store"
 )
 
+var debugLog *log.Logger
+
+func init() {
+	f, err := os.OpenFile("/tmp/tui-ssm-debug.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return
+	}
+	debugLog = log.New(f, "", log.LstdFlags|log.Lmicroseconds)
+}
+
+func dbg(format string, args ...any) {
+	if debugLog != nil {
+		debugLog.Printf(format, args...)
+	}
+}
+
 // ssmExecCmd wraps exec.Cmd to reset the terminal and flush the input
 // buffer after SSM session exits. Without this, the session-manager-plugin
 // can leave the terminal in a broken state and residual bytes in stdin
@@ -25,7 +42,9 @@ type ssmExecCmd struct {
 }
 
 func (c *ssmExecCmd) Run() error {
+	dbg("ssmExecCmd.Run: starting command: %v", c.cmd.Args)
 	err := c.cmd.Run()
+	dbg("ssmExecCmd.Run: command exited, err=%v", err)
 
 	// 1. Reset terminal to a sane state before Bubble Tea tries to restore.
 	reset := exec.Command("stty", "sane")
@@ -38,6 +57,7 @@ func (c *ssmExecCmd) Run() error {
 	//    which sends to p.errs and terminates the event loop.
 	unix.IoctlSetInt(int(os.Stdin.Fd()), unix.TCFLSH, unix.TCIFLUSH) //nolint:errcheck
 
+	dbg("ssmExecCmd.Run: terminal reset and stdin flushed, returning err=%v", err)
 	return err
 }
 
@@ -53,7 +73,11 @@ func (c *ssmExecCmd) SetStderr(w io.Writer) { c.cmd.Stderr = w }
 // SIGINT from the SSM child process group.
 func InterruptFilter(_ tea.Model, msg tea.Msg) tea.Msg {
 	if _, ok := msg.(tea.InterruptMsg); ok {
+		dbg("FILTER: InterruptMsg blocked")
 		return nil
+	}
+	if _, ok := msg.(tea.QuitMsg); ok {
+		dbg("FILTER: QuitMsg detected (signal-based quit)")
 	}
 	return msg
 }
@@ -65,7 +89,14 @@ type instancesLoadedMsg struct {
 	err       error
 }
 
-type ssmSessionDoneMsg struct{ err error }
+type ssmSessionDoneMsg struct {
+	err         error
+	instanceID  string
+	profile     string
+	region      string
+	alias       string
+	sessionType string // "session" or "port_forward"
+}
 
 // Sort columns cycle
 var sortColumns = []string{"name", "id", "state", "type", "az"}
@@ -137,6 +168,8 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	dbg("Update: msg type=%T value=%v", msg, msg)
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -146,9 +179,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case instancesLoadedMsg:
 		m.loading = false
 		if msg.err != nil {
+			dbg("instancesLoadedMsg: error=%v", msg.err)
 			m.err = msg.err
 			return m, nil
 		}
+		dbg("instancesLoadedMsg: %d instances loaded", len(msg.instances))
 		m.instances = msg.instances
 		for i := range m.instances {
 			if msg.ssmStatus != nil {
@@ -159,9 +194,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case ssmSessionDoneMsg:
+		dbg("ssmSessionDoneMsg: err=%v", msg.err)
 		m.viewState = ViewTable
-		m.loading = true
+		if msg.err != nil {
+			m.err = fmt.Errorf("SSM session failed for %s: %v", msg.alias, msg.err)
+			return m, nil
+		}
+		// Only record history for successful sessions
+		m.history.Add(store.HistoryEntry{
+			InstanceID: msg.instanceID,
+			Profile:    msg.profile,
+			Region:     msg.region,
+			Alias:      msg.alias,
+			Type:       msg.sessionType,
+		})
 		m.history.Save(store.HistoryPath())
+		m.err = nil
+		m.loading = true
 		return m, m.loadInstances()
 	}
 
@@ -537,33 +586,43 @@ func (m Model) loadInstances() tea.Cmd {
 }
 
 func (m Model) startSSMSession(inst internalaws.Instance) tea.Cmd {
-	m.history.Add(store.HistoryEntry{
-		InstanceID: inst.InstanceID,
-		Profile:    m.profile,
-		Region:     m.region,
-		Alias:      inst.DisplayName(),
-		Type:       "session",
-	})
+	profile := m.profile
+	region := m.region
+	alias := inst.DisplayName()
+	instanceID := inst.InstanceID
 
-	args := internalaws.BuildSSMSessionArgs(inst.InstanceID, m.profile, m.region)
+	args := internalaws.BuildSSMSessionArgs(instanceID, profile, region)
 	c := exec.Command("aws", args...)
 	return tea.Exec(&ssmExecCmd{cmd: c}, func(err error) tea.Msg {
-		return ssmSessionDoneMsg{err: err}
+		return ssmSessionDoneMsg{
+			err:         err,
+			instanceID:  instanceID,
+			profile:     profile,
+			region:      region,
+			alias:       alias,
+			sessionType: "session",
+		}
 	})
 }
 
 func (m Model) startPortForward(inst internalaws.Instance) tea.Cmd {
-	m.history.Add(store.HistoryEntry{
-		InstanceID: inst.InstanceID,
-		Profile:    m.profile,
-		Region:     m.region,
-		Alias:      inst.DisplayName(),
-		Type:       "port_forward",
-	})
+	profile := m.profile
+	region := m.region
+	alias := inst.DisplayName()
+	instanceID := inst.InstanceID
+	localPort := m.portForward.LocalPort
+	remotePort := m.portForward.RemotePort
 
-	args := internalaws.BuildPortForwardArgs(inst.InstanceID, m.profile, m.region, m.portForward.LocalPort, m.portForward.RemotePort)
+	args := internalaws.BuildPortForwardArgs(instanceID, profile, region, localPort, remotePort)
 	c := exec.Command("aws", args...)
 	return tea.Exec(&ssmExecCmd{cmd: c}, func(err error) tea.Msg {
-		return ssmSessionDoneMsg{err: err}
+		return ssmSessionDoneMsg{
+			err:         err,
+			instanceID:  instanceID,
+			profile:     profile,
+			region:      region,
+			alias:       alias,
+			sessionType: "port_forward",
+		}
 	})
 }

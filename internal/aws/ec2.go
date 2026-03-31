@@ -23,6 +23,8 @@ type Instance struct {
 	SecurityGroups   []string
 	KeyPair          string
 	IAMRole          string
+	SubnetID         string
+	VpcID            string
 	SSMConnected     bool
 }
 
@@ -91,6 +93,8 @@ func toInstance(inst ec2types.Instance) Instance {
 		PrivateIP:        aws.ToString(inst.PrivateIpAddress),
 		PublicIP:         aws.ToString(inst.PublicIpAddress),
 		KeyPair:          aws.ToString(inst.KeyName),
+		SubnetID:         aws.ToString(inst.SubnetId),
+		VpcID:            aws.ToString(inst.VpcId),
 	}
 
 	if inst.State != nil {

@@ -100,6 +100,12 @@ func RenderInstanceDetail(inst aws.Instance) string {
 	if inst.PublicIP != "" {
 		b.WriteString(fmt.Sprintf("  Public IP:  %s\n", inst.PublicIP))
 	}
+	if inst.VpcID != "" {
+		b.WriteString(fmt.Sprintf("  VPC:        %s\n", inst.VpcID))
+	}
+	if inst.SubnetID != "" {
+		b.WriteString(fmt.Sprintf("  Subnet:     %s\n", inst.SubnetID))
+	}
 	b.WriteString(fmt.Sprintf("  Platform:   %s\n", inst.Platform))
 	b.WriteString(fmt.Sprintf("  Key Pair:   %s\n", inst.KeyPair))
 	if inst.IAMRole != "" {

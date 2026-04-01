@@ -35,9 +35,9 @@ func SGCompactColumns() []shared.Column {
 // SGColumnsForWidth returns the appropriate SG column set for the given terminal width.
 func SGColumnsForWidth(width int) []shared.Column {
 	if width < 100 {
-		return SGCompactColumns()
+		return shared.ExpandNameColumn(SGCompactColumns(), width)
 	}
-	return SGDefaultColumns()
+	return shared.ExpandNameColumn(SGDefaultColumns(), width)
 }
 
 // RenderSGTable renders the security group table.
@@ -129,9 +129,9 @@ func NACLCompactColumns() []shared.Column {
 // NACLColumnsForWidth returns the appropriate NACL column set for the given terminal width.
 func NACLColumnsForWidth(width int) []shared.Column {
 	if width < 80 {
-		return NACLCompactColumns()
+		return shared.ExpandNameColumn(NACLCompactColumns(), width)
 	}
-	return NACLDefaultColumns()
+	return shared.ExpandNameColumn(NACLDefaultColumns(), width)
 }
 
 // RenderNACLTable renders the network ACL table.

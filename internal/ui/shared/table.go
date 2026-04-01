@@ -14,6 +14,37 @@ type Column struct {
 	Width int
 }
 
+// ExpandNameColumn adjusts the "name" column width to fill remaining terminal space.
+// It calculates the total fixed column widths, subtracts from the available width,
+// and assigns the remaining space to the "name" column (minimum 20, maximum 60).
+func ExpandNameColumn(columns []Column, termWidth int) []Column {
+	result := make([]Column, len(columns))
+	copy(result, columns)
+
+	fixedWidth := 0
+	nameIdx := -1
+	for i, col := range result {
+		if col.Key == "name" {
+			nameIdx = i
+		} else {
+			fixedWidth += col.Width + 1 // +1 for space separator
+		}
+	}
+	if nameIdx < 0 {
+		return result
+	}
+
+	available := termWidth - fixedWidth - 1 // -1 for name column's separator
+	if available < 20 {
+		available = 20
+	}
+	if available > 60 {
+		available = 60
+	}
+	result[nameIdx].Width = available
+	return result
+}
+
 // RenderRow renders a single table row from column definitions,
 // a text function, and an optional style function.
 func RenderRow(columns []Column, getText func(Column) string, styleFn func(Column) lipgloss.Style) string {

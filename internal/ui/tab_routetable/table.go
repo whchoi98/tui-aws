@@ -33,9 +33,9 @@ func CompactColumns() []shared.Column {
 // ColumnsForWidth returns the appropriate column set for the given terminal width.
 func ColumnsForWidth(width int) []shared.Column {
 	if width < 80 {
-		return CompactColumns()
+		return shared.ExpandNameColumn(CompactColumns(), width)
 	}
-	return DefaultColumns()
+	return shared.ExpandNameColumn(DefaultColumns(), width)
 }
 
 // RenderTable renders the route table table with header, rows, and scrolling.

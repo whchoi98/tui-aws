@@ -207,7 +207,7 @@ func (m *TroubleshootModel) ShortHelp() string {
 	case vsRAResult:
 		return helpLine("Esc", "Back to result")
 	default:
-		return helpLine("Tab", "Switch field", "Enter", "Pick instance", "c", "Check")
+		return helpLine("Tab", "Switch field", "Enter", "Pick/Check")
 	}
 }
 
@@ -221,6 +221,16 @@ func (m *TroubleshootModel) updateForm(msg tea.Msg, s *shared.SharedState) (shar
 
 	key := keyMsg.String()
 
+	// Check connectivity — works from any field when both instances are selected
+	if key == "enter" && m.field != fieldSource && m.field != fieldDest {
+		if m.srcInst != nil && m.dstInst != nil {
+			m.loading = true
+			m.err = nil
+			return m, m.loadCheckData(s)
+		}
+		return m, nil
+	}
+
 	// When editing text fields (protocol/port), prioritize character input
 	if m.field == fieldProtocol || m.field == fieldPort {
 		switch key {
@@ -232,8 +242,6 @@ func (m *TroubleshootModel) updateForm(msg tea.Msg, s *shared.SharedState) (shar
 			m.field = (m.field - 1 + 4) % 4
 		case "down":
 			m.field = (m.field + 1) % 4
-		case "enter":
-			// enter on text fields does nothing (use 'c' only from non-text fields)
 		case "esc":
 			m.field = fieldSource
 		case "backspace":
@@ -267,13 +275,6 @@ func (m *TroubleshootModel) updateForm(msg tea.Msg, s *shared.SharedState) (shar
 			m.loading = true
 			m.pickerFor = m.field
 			return m, m.loadInstances(s)
-		}
-
-	case "c":
-		if m.srcInst != nil && m.dstInst != nil {
-			m.loading = true
-			m.err = nil
-			return m, m.loadCheckData(s)
 		}
 	}
 

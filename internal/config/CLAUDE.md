@@ -1,7 +1,7 @@
 # Config Module
 
 ## Role
-Load, save, and manage user configuration from `~/.tui-ssm/config.json`. Provides default values for new installations.
+Load, save, and manage user configuration from `~/.tui-aws/config.json`. Provides default values for new installations.
 
 ## Key Files
 - `config.go` — Config struct, Load/Save/DefaultConfig, Dir/Path helpers
@@ -10,5 +10,5 @@ Load, save, and manage user configuration from `~/.tui-ssm/config.json`. Provide
 ## Rules
 - Config file is JSON with `json:"..."` struct tags
 - Missing config file returns DefaultConfig (no error)
-- Dir() returns `~/.tui-ssm/`, Path() returns `~/.tui-ssm/config.json`
+- Dir() returns `~/.tui-aws/`, Path() returns `~/.tui-aws/config.json`
 - Save creates parent directories automatically

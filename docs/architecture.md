@@ -53,7 +53,7 @@ RootModel (tea.Model)
 
 | Package | Path | Role |
 |---------|------|------|
-| **aws** | `internal/aws/` | All AWS SDK calls via 17 service clients (EC2, SSM, STS, ELBv2, ELB, AutoScaling, CloudWatch, CloudWatch Logs, IAM, CloudFront, WAFv2, ACM, Route53, RDS, S3, ECS, EKS, Lambda) + K8s REST API |
+| **aws** | `internal/aws/` | All AWS SDK calls via 18 service clients (EC2, SSM, STS, ELBv2, ELB, AutoScaling, CloudWatch, CloudWatch Logs, IAM, CloudFront, WAFv2, ACM, Route53, RDS, S3, ECS, EKS, Lambda) + K8s REST API |
 | **config** | `internal/config/` | User preferences (`~/.tui-aws/config.json`) |
 | **store** | `internal/store/` | Favorites & session history persistence |
 | **ui/root** | `internal/ui/root.go` | RootModel: tab switching, global keys, SSM exec, ECS exec, InterruptFilter |

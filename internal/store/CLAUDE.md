@@ -1,7 +1,7 @@
 # Store Module
 
 ## Role
-Persist favorites and session history as JSON files under `~/.tui-ssm/`.
+Persist favorites and session history as JSON files under `~/.tui-aws/`.
 
 ## Key Files
 - `favorites.go` — Favorites CRUD (Add/Remove/IsFavorite), FavoritesPath()

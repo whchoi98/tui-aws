@@ -26,7 +26,7 @@ internal/
     security.go                  SecurityGroup rules, NetworkACL rules
     reachability.go              VPC Reachability Analyzer
     profile.go                   AWS profile parsing (~/.aws/credentials + config)
-    session.go                   SDK client factory (all 17 service clients)
+    session.go                   SDK client factory (all 18 service clients)
     ssm.go                       SSM command building, prerequisite checks
     elb.go                       ALB/NLB/CLB, listeners, target groups, targets
     asg.go                       Auto Scaling Groups, scaling policies, instances

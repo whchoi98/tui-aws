@@ -184,19 +184,53 @@ Press `R` on the result screen to run AWS's own network path analysis. This call
 
 ## Quick Start
 
+### One-line Install & Run
+
+```bash
+git clone https://github.com/whchoi98/tui-aws.git && cd tui-aws && ./scripts/setup.sh
+```
+
+That's it. The setup script handles everything — checks your system, installs missing packages, builds the binary, and launches tui-aws.
+
+### What the setup script does
+
+```
+╔══════════════════════════════════════════╗
+║         tui-aws Setup & Launcher         ║
+╚══════════════════════════════════════════╝
+
+[1/5] Checking AWS CLI...
+  ✓ AWS CLI v2 (aws-cli/2.x.x)           ← installs if missing (macOS pkg / Linux zip)
+
+[2/5] Checking Session Manager Plugin...
+  ✓ Session Manager Plugin installed       ← installs if missing (macOS zip / Linux deb or rpm)
+
+[3/5] Checking Go...
+  ✓ Go 1.23 (/usr/local/go/bin/go)       ← installs to ~/.local/go/ if missing
+
+[4/5] Checking AWS credentials...
+  ✓ EC2 Instance Role detected             ← checks Instance Role / env vars / ~/.aws/credentials
+  ✓ ~/.aws/credentials (2 profiles)
+
+[5/5] Building tui-aws...
+  ✓ Built: ./tui-aws
+  ✓ Version: tui-aws 0.1.0
+
+  ? Install tui-aws to /usr/local/bin/ (requires sudo)? [Y/n]
+```
+
+Each step prompts before installing. You can decline any step and install manually later.
+
+### Already have prerequisites?
+
+If AWS CLI, Session Manager Plugin, and Go are already installed:
+
 ```bash
 git clone https://github.com/whchoi98/tui-aws.git
 cd tui-aws
-./scripts/setup.sh
+make build
+./tui-aws
 ```
-
-The setup script automatically:
-1. Checks and installs **AWS CLI v2** (macOS pkg / Linux zip)
-2. Checks and installs **Session Manager Plugin** (macOS zip / Linux deb or rpm)
-3. Checks and installs **Go 1.23+** (to `~/.local/go/`)
-4. Verifies **AWS credentials** (Instance Role / env vars / credentials file)
-5. Builds the `tui-aws` binary
-6. Optionally installs to `/usr/local/bin/` or `~/bin/`
 
 ---
 
@@ -812,19 +846,53 @@ session-manager-plugin --version
 
 ## 빠른 시작
 
+### 한 줄로 설치 & 실행
+
+```bash
+git clone https://github.com/whchoi98/tui-aws.git && cd tui-aws && ./scripts/setup.sh
+```
+
+이 한 줄이면 끝입니다. 설치 스크립트가 시스템을 점검하고, 부족한 패키지를 설치하고, 바이너리를 빌드한 후 tui-aws를 실행합니다.
+
+### 설치 스크립트 동작 과정
+
+```
+╔══════════════════════════════════════════╗
+║         tui-aws Setup & Launcher         ║
+╚══════════════════════════════════════════╝
+
+[1/5] Checking AWS CLI...
+  ✓ AWS CLI v2 (aws-cli/2.x.x)           ← 미설치 시 자동 설치 (macOS pkg / Linux zip)
+
+[2/5] Checking Session Manager Plugin...
+  ✓ Session Manager Plugin installed       ← 미설치 시 자동 설치 (macOS zip / Linux deb 또는 rpm)
+
+[3/5] Checking Go...
+  ✓ Go 1.23 (/usr/local/go/bin/go)       ← 미설치 시 ~/.local/go/에 설치
+
+[4/5] Checking AWS credentials...
+  ✓ EC2 Instance Role detected             ← Instance Role / 환경변수 / ~/.aws/credentials 확인
+  ✓ ~/.aws/credentials (2 profiles)
+
+[5/5] Building tui-aws...
+  ✓ Built: ./tui-aws
+  ✓ Version: tui-aws 0.1.0
+
+  ? Install tui-aws to /usr/local/bin/ (requires sudo)? [Y/n]
+```
+
+각 단계에서 설치 전 확인을 요청합니다. 거절하고 나중에 수동 설치할 수 있습니다.
+
+### 이미 필수 패키지가 설치되어 있다면?
+
+AWS CLI, Session Manager Plugin, Go가 이미 있으면:
+
 ```bash
 git clone https://github.com/whchoi98/tui-aws.git
 cd tui-aws
-./scripts/setup.sh
+make build
+./tui-aws
 ```
-
-설치 스크립트가 자동으로:
-1. **AWS CLI v2** 확인 및 설치 (macOS pkg / Linux zip)
-2. **Session Manager Plugin** 확인 및 설치 (macOS zip / Linux deb 또는 rpm)
-3. **Go 1.23+** 확인 및 설치 (`~/.local/go/`에 설치)
-4. **AWS 자격 증명** 확인 (Instance Role / 환경변수 / credentials 파일)
-5. `tui-aws` 바이너리 빌드
-6. (선택적) `/usr/local/bin/` 또는 `~/bin/`에 설치
 
 ---
 

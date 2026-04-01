@@ -185,10 +185,12 @@ step "3/5" "Checking Go..."
 
 GO_CMD=""
 find_go() {
-    # Check standard locations
+    # Check standard locations including Homebrew paths
     for p in \
         "$(command -v go 2>/dev/null)" \
         "/usr/local/go/bin/go" \
+        "/opt/homebrew/bin/go" \
+        "/opt/homebrew/opt/go/bin/go" \
         "$HOME/go-install/go/bin/go" \
         "$HOME/.local/go/bin/go" \
         "/usr/lib/go/bin/go" \
@@ -202,33 +204,50 @@ find_go() {
 }
 
 install_go() {
-    local go_version="1.23.5"
-    echo -e "  ${YELLOW}Installing Go ${go_version}...${NC}"
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    trap "rm -rf $tmpdir" RETURN
+    if [[ "$OS" == "darwin" ]]; then
+        # macOS: prefer Homebrew (avoids URL blocking by security software)
+        if command -v brew &>/dev/null; then
+            echo -e "  ${YELLOW}Installing Go via Homebrew...${NC}"
+            brew install go
+            GO_CMD="$(brew --prefix)/bin/go"
+        else
+            echo -e "  ${YELLOW}Installing Go via official installer...${NC}"
+            local go_version="1.23.5"
+            local url="https://dl.google.com/go/go${go_version}.darwin-${ARCH}.pkg"
+            local tmpdir
+            tmpdir=$(mktemp -d)
+            trap "rm -rf $tmpdir" RETURN
+            curl -fsSL "$url" -o "$tmpdir/go.pkg"
+            echo -e "  ${YELLOW}Requires sudo password...${NC}"
+            sudo installer -pkg "$tmpdir/go.pkg" -target /
+            GO_CMD="/usr/local/go/bin/go"
+        fi
+    else
+        # Linux: download tarball from Google's CDN (more reliable than go.dev)
+        local go_version="1.23.5"
+        echo -e "  ${YELLOW}Installing Go ${go_version}...${NC}"
+        local tmpdir
+        tmpdir=$(mktemp -d)
+        trap "rm -rf $tmpdir" RETURN
 
-    local go_os="$OS"
-    local go_arch="$ARCH"
-    local url="https://go.dev/dl/go${go_version}.${go_os}-${go_arch}.tar.gz"
+        local url="https://dl.google.com/go/go${go_version}.linux-${ARCH}.tar.gz"
+        curl -fsSL "$url" -o "$tmpdir/go.tar.gz"
 
-    curl -fsSL "$url" -o "$tmpdir/go.tar.gz"
+        local install_dir="$HOME/.local"
+        mkdir -p "$install_dir"
+        rm -rf "$install_dir/go"
+        tar -C "$install_dir" -xzf "$tmpdir/go.tar.gz"
 
-    local install_dir="$HOME/.local"
-    mkdir -p "$install_dir"
-    rm -rf "$install_dir/go"
-    tar -C "$install_dir" -xzf "$tmpdir/go.tar.gz"
-
-    GO_CMD="$install_dir/go/bin/go"
+        GO_CMD="$install_dir/go/bin/go"
+    fi
 
     # Add to PATH for current session
-    export PATH="$install_dir/go/bin:$PATH"
+    export PATH="$(dirname "$GO_CMD"):$HOME/go/bin:$PATH"
     export GOPATH="$HOME/go"
-    export PATH="$GOPATH/bin:$PATH"
 
     # Suggest adding to shell profile
     echo -e "  ${YELLOW}Add to your shell profile (~/.bashrc or ~/.zshrc):${NC}"
-    echo -e "  ${CYAN}export PATH=\"$install_dir/go/bin:\$HOME/go/bin:\$PATH\"${NC}"
+    echo -e "  ${CYAN}export PATH=\"$(dirname "$GO_CMD"):\$HOME/go/bin:\$PATH\"${NC}"
 }
 
 if find_go; then

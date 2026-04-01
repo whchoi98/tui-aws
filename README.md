@@ -1,14 +1,26 @@
+<div align="center">
+
 # tui-aws
 
-> **[한국어 README는 여기를 클릭하세요 →](#한국어)**
+### **[ [English](#english) | [한국어](#한국어) ]**
 
-A terminal UI for browsing AWS EC2 instances, VPC networking, and connecting via SSM Session Manager.
+AWS EC2 / VPC / Networking TUI Tool with SSM Session Manager
 
 ![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
+</div>
+
 ---
+
+<a id="english"></a>
+
+## English
+
+> **[ [English](#english) | [한국어](#한국어) ]**
+
+A terminal UI for browsing AWS EC2 instances, VPC networking, and connecting via SSM Session Manager.
 
 ## Features
 
@@ -251,15 +263,19 @@ tui-aws/
 - **Styling:** [Lip Gloss v2](https://github.com/charmbracelet/lipgloss) (Gruvbox theme)
 - **AWS:** [aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)
 
----
-
-<br><br>
+<p align="right"><a href="#tui-aws">⬆ Back to top</a></p>
 
 ---
+
+<br>
+
+---
+
+<a id="한국어"></a>
 
 # 한국어
 
-> **[Click here for English README →](#tui-aws)**
+> **[ [English](#english) | [한국어](#한국어) ]**
 
 AWS EC2 인스턴스 조회, VPC 네트워크 탐색, SSM Session Manager 접속을 위한 터미널 UI 도구.
 
@@ -470,3 +486,5 @@ make test           # 테스트 실행
 - **TUI:** [Bubble Tea v2](https://github.com/charmbracelet/bubbletea) (Elm 아키텍처)
 - **스타일링:** [Lip Gloss v2](https://github.com/charmbracelet/lipgloss) (Gruvbox 테마)
 - **AWS:** [aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)
+
+<p align="right"><a href="#tui-aws">⬆ 맨 위로</a></p>

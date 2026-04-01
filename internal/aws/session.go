@@ -5,14 +5,18 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
+	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	elbv2 "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 )
 
 type Clients struct {
@@ -24,6 +28,10 @@ type Clients struct {
 	ASG     *autoscaling.Client
 	CW      *cloudwatch.Client
 	IAM     *iam.Client
+	CF      *cloudfront.Client
+	WAF     *wafv2.Client
+	ACM     *acm.Client
+	R53     *route53.Client
 	Profile string
 	Region  string
 }
@@ -51,6 +59,10 @@ func NewClients(ctx context.Context, profile, region string) (*Clients, error) {
 		ASG:     autoscaling.NewFromConfig(cfg),
 		CW:      cloudwatch.NewFromConfig(cfg),
 		IAM:     iam.NewFromConfig(cfg),
+		CF:      cloudfront.NewFromConfig(cfg),
+		WAF:     wafv2.NewFromConfig(cfg),
+		ACM:     acm.NewFromConfig(cfg),
+		R53:     route53.NewFromConfig(cfg),
 		Profile: profile,
 		Region:  region,
 	}, nil

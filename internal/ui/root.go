@@ -13,12 +13,15 @@ import (
 	"tui-aws/internal/config"
 	"tui-aws/internal/store"
 	"tui-aws/internal/ui/shared"
+	"tui-aws/internal/ui/tab_acm"
 	"tui-aws/internal/ui/tab_asg"
+	"tui-aws/internal/ui/tab_cloudfront"
 	"tui-aws/internal/ui/tab_cloudwatch"
 	"tui-aws/internal/ui/tab_ebs"
 	"tui-aws/internal/ui/tab_ec2"
 	"tui-aws/internal/ui/tab_elb"
 	"tui-aws/internal/ui/tab_iam"
+	"tui-aws/internal/ui/tab_r53"
 	"tui-aws/internal/ui/tab_routetable"
 	"tui-aws/internal/ui/tab_sg"
 	"tui-aws/internal/ui/tab_subnet"
@@ -26,6 +29,7 @@ import (
 	"tui-aws/internal/ui/tab_troubleshoot"
 	"tui-aws/internal/ui/tab_vpc"
 	"tui-aws/internal/ui/tab_vpce"
+	"tui-aws/internal/ui/tab_waf"
 )
 
 // ssmExecCmd wraps exec.Cmd to reset the terminal and flush the input
@@ -130,6 +134,14 @@ func NewRootModel(cfg config.Config, profiles []string, favs *store.Favorites, h
 			tabs[i] = tab_elb.New()
 		case shared.TabCloudWatch:
 			tabs[i] = tab_cloudwatch.New()
+		case shared.TabCloudFront:
+			tabs[i] = tab_cloudfront.New()
+		case shared.TabWAF:
+			tabs[i] = tab_waf.New()
+		case shared.TabACM:
+			tabs[i] = tab_acm.New()
+		case shared.TabR53:
+			tabs[i] = tab_r53.New()
 		case shared.TabIAM:
 			tabs[i] = tab_iam.New()
 		case shared.TabCheck:

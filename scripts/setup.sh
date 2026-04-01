@@ -53,8 +53,15 @@ confirm() {
 }
 
 version_gte() {
-    # Returns 0 if $1 >= $2 (semantic version comparison)
-    printf '%s\n%s\n' "$2" "$1" | sort -V -C
+    # Returns 0 if $1 >= $2 (semantic version comparison, macOS compatible)
+    local IFS=.
+    local i v1=($1) v2=($2)
+    for ((i=0; i<${#v2[@]}; i++)); do
+        [[ -z ${v1[i]+x} ]] && v1[i]=0
+        if ((v1[i] > v2[i])); then return 0; fi
+        if ((v1[i] < v2[i])); then return 1; fi
+    done
+    return 0
 }
 
 # ─────────────────────────────────────────────
@@ -71,8 +78,9 @@ install_aws_cli() {
 
     if [[ "$OS" == "darwin" ]]; then
         curl -fsSL "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "$tmpdir/AWSCLIV2.pkg"
-        echo -e "  ${YELLOW}Requires sudo for installation${NC}"
+        echo -e "  ${YELLOW}Requires sudo password for installation...${NC}"
         sudo installer -pkg "$tmpdir/AWSCLIV2.pkg" -target /
+        echo -e "  ${GREEN}AWS CLI v2 installation complete${NC}"
     else
         curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip" -o "$tmpdir/awscli.zip"
         cd "$tmpdir"
@@ -84,7 +92,8 @@ install_aws_cli() {
 }
 
 if command -v aws &>/dev/null; then
-    AWS_VERSION=$(aws --version 2>&1 | grep -oP 'aws-cli/\K[0-9]+' || echo "0")
+    AWS_VERSION=$(aws --version 2>&1 | sed -n 's/.*aws-cli\/\([0-9]*\).*/\1/p')
+    AWS_VERSION=${AWS_VERSION:-0}
     if [[ "$AWS_VERSION" -ge "$MIN_AWS_CLI_VERSION" ]]; then
         check_ok "AWS CLI v2 ($(aws --version 2>&1 | head -1))"
     else
@@ -223,7 +232,8 @@ install_go() {
 }
 
 if find_go; then
-    GO_VERSION=$("$GO_CMD" version 2>&1 | grep -oP 'go\K[0-9]+\.[0-9]+' || echo "0.0")
+    GO_VERSION=$("$GO_CMD" version 2>&1 | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p')
+    GO_VERSION=${GO_VERSION:-0.0}
     if version_gte "$GO_VERSION" "$MIN_GO_VERSION"; then
         check_ok "Go $GO_VERSION ($GO_CMD)"
     else

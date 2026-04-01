@@ -792,6 +792,10 @@ session-manager-plugin --version
 
 > **[ [English](#english) | [한국어](#한국어) ]**
 
+[![데모 영상](https://img.youtube.com/vi/78gfU_Vfluw/maxresdefault.jpg)](https://youtu.be/78gfU_Vfluw)
+
+> 위 이미지를 클릭하면 YouTube 데모 영상으로 이동합니다
+
 ### 목차
 
 - [개요](#개요)

@@ -184,7 +184,16 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Handle global keys
-	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+	// When the Check tab is editing text fields (protocol/port), skip global
+	// key handling so characters like p, r, q, c, and digits reach the tab.
+	checkEditing := false
+	if m.tabIDs[m.activeTab] == shared.TabCheck {
+		if tm, ok := m.tabs[m.activeTab].(*tab_troubleshoot.TroubleshootModel); ok {
+			checkEditing = tm.IsEditing()
+		}
+	}
+
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok && !checkEditing {
 		switch keyMsg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit

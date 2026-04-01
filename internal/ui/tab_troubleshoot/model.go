@@ -188,6 +188,12 @@ func (m *TroubleshootModel) View(s *shared.SharedState) string {
 	return strings.Join(sections, "\n")
 }
 
+// IsEditing returns true when the model is in a text input field
+// (protocol or port), so the root model can skip global key handling.
+func (m *TroubleshootModel) IsEditing() bool {
+	return m.viewState == vsForm && (m.field == fieldProtocol || m.field == fieldPort)
+}
+
 func (m *TroubleshootModel) ShortHelp() string {
 	switch m.viewState {
 	case vsPicker:
@@ -213,7 +219,43 @@ func (m *TroubleshootModel) updateForm(msg tea.Msg, s *shared.SharedState) (shar
 		return m, nil
 	}
 
-	switch keyMsg.String() {
+	key := keyMsg.String()
+
+	// When editing text fields (protocol/port), prioritize character input
+	if m.field == fieldProtocol || m.field == fieldPort {
+		switch key {
+		case "tab":
+			m.field = (m.field + 1) % 4
+		case "shift+tab":
+			m.field = (m.field - 1 + 4) % 4
+		case "up":
+			m.field = (m.field - 1 + 4) % 4
+		case "down":
+			m.field = (m.field + 1) % 4
+		case "enter":
+			// enter on text fields does nothing (use 'c' only from non-text fields)
+		case "esc":
+			m.field = fieldSource
+		case "backspace":
+			if m.field == fieldProtocol && len(m.protocol) > 0 {
+				m.protocol = m.protocol[:len(m.protocol)-1]
+			} else if m.field == fieldPort && len(m.port) > 0 {
+				m.port = m.port[:len(m.port)-1]
+			}
+		default:
+			if len(key) == 1 {
+				if m.field == fieldProtocol {
+					m.protocol += key
+				} else if key[0] >= '0' && key[0] <= '9' {
+					m.port += key
+				}
+			}
+		}
+		return m, nil
+	}
+
+	// Source/Dest fields — navigation and action keys
+	switch key {
 	case "tab", "down", "j":
 		m.field = (m.field + 1) % 4
 
@@ -232,31 +274,6 @@ func (m *TroubleshootModel) updateForm(msg tea.Msg, s *shared.SharedState) (shar
 			m.loading = true
 			m.err = nil
 			return m, m.loadCheckData(s)
-		}
-
-	case "backspace":
-		switch m.field {
-		case fieldProtocol:
-			if len(m.protocol) > 0 {
-				m.protocol = m.protocol[:len(m.protocol)-1]
-			}
-		case fieldPort:
-			if len(m.port) > 0 {
-				m.port = m.port[:len(m.port)-1]
-			}
-		}
-
-	default:
-		r := keyMsg.String()
-		if len(r) == 1 {
-			switch m.field {
-			case fieldProtocol:
-				m.protocol += r
-			case fieldPort:
-				if r[0] >= '0' && r[0] <= '9' {
-					m.port += r
-				}
-			}
 		}
 	}
 

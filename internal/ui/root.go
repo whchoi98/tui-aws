@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -100,18 +101,21 @@ type RootModel struct {
 
 // NewRootModel creates the root model with all tabs.
 func NewRootModel(cfg config.Config, profiles []string, favs *store.Favorites, hist *store.History) RootModel {
-	// Validate that default profile exists; fallback to first available profile
+	// Validate default profile: try to create AWS clients to verify credentials work.
+	// If the saved profile no longer has valid credentials, fallback to the first
+	// named profile (skip "(instance role)" sentinel).
 	profile := cfg.DefaultProfile
-	if len(profiles) > 0 {
-		found := false
-		for _, p := range profiles {
-			if p == profile {
-				found = true
+	if profile != "" && profile != "default" && profile != internalaws.InstanceRoleProfile {
+		ctx := context.Background()
+		if _, err := internalaws.NewClients(ctx, profile, cfg.DefaultRegion); err != nil {
+			// Saved profile is broken — pick the first named profile
+			for _, p := range profiles {
+				if p == internalaws.InstanceRoleProfile {
+					continue
+				}
+				profile = p
 				break
 			}
-		}
-		if !found {
-			profile = profiles[0]
 		}
 	}
 

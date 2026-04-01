@@ -17,6 +17,7 @@ import (
 	"tui-aws/internal/ui/tab_routetable"
 	"tui-aws/internal/ui/tab_sg"
 	"tui-aws/internal/ui/tab_subnet"
+	"tui-aws/internal/ui/tab_troubleshoot"
 	"tui-aws/internal/ui/tab_vpc"
 )
 
@@ -110,6 +111,8 @@ func NewRootModel(cfg config.Config, profiles []string, favs *store.Favorites, h
 			tabs[i] = tab_routetable.New()
 		case shared.TabSG:
 			tabs[i] = tab_sg.New()
+		case shared.TabCheck:
+			tabs[i] = tab_troubleshoot.New()
 		default:
 			tabs[i] = NewPlaceholderTab(id.Label())
 		}

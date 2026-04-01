@@ -19,12 +19,26 @@ type TabID int
 
 const (
 	TabEC2 TabID = iota
+	TabASG
+	TabEBS
 	TabVPC
 	TabSubnet
 	TabRoutes
 	TabSG
 	TabVPCEndpoint
+	TabTGW
 	TabELB
+	TabCloudFront
+	TabWAF
+	TabACM
+	TabR53
+	TabRDS
+	TabS3
+	TabECS
+	TabEKS
+	TabLambda
+	TabCloudWatch
+	TabIAM
 	TabCheck
 )
 
@@ -33,6 +47,10 @@ func (t TabID) Label() string {
 	switch t {
 	case TabEC2:
 		return "EC2"
+	case TabASG:
+		return "ASG"
+	case TabEBS:
+		return "EBS"
 	case TabVPC:
 		return "VPC"
 	case TabSubnet:
@@ -43,8 +61,32 @@ func (t TabID) Label() string {
 		return "SG"
 	case TabVPCEndpoint:
 		return "VPCE"
+	case TabTGW:
+		return "TGW"
 	case TabELB:
 		return "ELB"
+	case TabCloudFront:
+		return "CF"
+	case TabWAF:
+		return "WAF"
+	case TabACM:
+		return "ACM"
+	case TabR53:
+		return "R53"
+	case TabRDS:
+		return "RDS"
+	case TabS3:
+		return "S3"
+	case TabECS:
+		return "ECS"
+	case TabEKS:
+		return "EKS"
+	case TabLambda:
+		return "Lambda"
+	case TabCloudWatch:
+		return "CW"
+	case TabIAM:
+		return "IAM"
 	case TabCheck:
 		return "Check"
 	default:
@@ -54,7 +96,15 @@ func (t TabID) Label() string {
 
 // AllTabs returns all tab IDs in display order.
 func AllTabs() []TabID {
-	return []TabID{TabEC2, TabVPC, TabSubnet, TabRoutes, TabSG, TabVPCEndpoint, TabELB, TabCheck}
+	return []TabID{
+		TabEC2, TabASG, TabEBS,
+		TabVPC, TabSubnet, TabRoutes, TabSG, TabVPCEndpoint, TabTGW,
+		TabELB, TabCloudFront, TabWAF, TabACM,
+		TabR53, TabRDS, TabS3,
+		TabECS, TabEKS, TabLambda,
+		TabCloudWatch, TabIAM,
+		TabCheck,
+	}
 }
 
 // NavigateToTab is a message that requests switching to a specific tab.

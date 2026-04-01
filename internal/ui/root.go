@@ -216,7 +216,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.overlay = overlayRegionSelect
 			return m, nil
 
-		case "1", "2", "3", "4", "5", "6", "7", "8":
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			idx := int(keyMsg.String()[0] - '1')
 			if idx >= 0 && idx < len(m.tabs) {
 				return m.switchTab(idx)

@@ -23,6 +23,21 @@ const (
 	vsActionMenu
 )
 
+// networkPathData holds all network-path info for a single instance.
+type networkPathData struct {
+	VPC        internalaws.VPC
+	Subnet     internalaws.Subnet
+	RouteTable internalaws.RouteTable
+	SGs        []internalaws.SecurityGroup
+	NACL       internalaws.NetworkACL
+}
+
+// networkPathLoadedMsg is sent when the network-path data has been fetched.
+type networkPathLoadedMsg struct {
+	data networkPathData
+	err  error
+}
+
 // Messages internal to the EC2 tab.
 type instancesLoadedMsg struct {
 	instances []internalaws.Instance
@@ -72,7 +87,9 @@ type EC2Model struct {
 	filter      FilterModel
 	portForward PortForwardModel
 	actionMenu  ActionMenuModel
-	showDetail  string // "sg" or "detail" for info overlays
+	showDetail     string // "sg", "detail", or "netpath" for info overlays
+	netPathData    *networkPathData
+	netPathLoading bool
 
 	// Sort
 	sortBy    string
@@ -116,6 +133,16 @@ func (m *EC2Model) Update(msg tea.Msg, s *shared.SharedState) (shared.TabModel, 
 			}
 		}
 		m.applyFilters(s)
+		return m, nil
+
+	case networkPathLoadedMsg:
+		m.netPathLoading = false
+		if msg.err != nil {
+			m.err = msg.err
+			m.showDetail = ""
+			return m, nil
+		}
+		m.netPathData = &msg.data
 		return m, nil
 
 	case SSMSessionDoneMsg:
@@ -176,6 +203,12 @@ func (m *EC2Model) View(s *shared.SharedState) string {
 	// Overlay
 	overlay := ""
 	switch {
+	case m.showDetail == "netpath" && m.actionMenu.Active:
+		if m.netPathLoading {
+			overlay = shared.RenderOverlay("  Loading network path...")
+		} else if m.netPathData != nil {
+			overlay = RenderNetworkPath(m.actionMenu.Instance, *m.netPathData)
+		}
 	case m.showDetail == "sg" && m.actionMenu.Active:
 		overlay = RenderSecurityGroups(m.actionMenu.Instance)
 	case m.showDetail == "detail" && m.actionMenu.Active:
@@ -410,9 +443,22 @@ func (m *EC2Model) updateActionMenu(msg tea.Msg, s *shared.SharedState) (shared.
 		return m, nil
 	}
 
-	// If showing a detail overlay (sg/detail), any key closes it
+	// If showing a detail overlay (sg/detail/netpath), any key closes it
 	if m.showDetail != "" {
+		// While netpath is still loading, only esc can cancel
+		if m.showDetail == "netpath" && m.netPathLoading {
+			if keyMsg.String() == "esc" {
+				m.showDetail = ""
+				m.netPathLoading = false
+				m.netPathData = nil
+				m.viewState = vsTable
+				m.actionMenu.Active = false
+			}
+			return m, nil
+		}
 		m.showDetail = ""
+		m.netPathData = nil
+		m.netPathLoading = false
 		m.viewState = vsTable
 		m.actionMenu.Active = false
 		return m, nil
@@ -438,6 +484,11 @@ func (m *EC2Model) updateActionMenu(msg tea.Msg, s *shared.SharedState) (shared.
 			m.actionMenu.Active = false
 			m.viewState = vsPortForward
 			m.portForward = PortForwardModel{Active: true, LocalPort: "8080", RemotePort: "80", Field: 0}
+		case "netpath":
+			m.showDetail = "netpath"
+			m.netPathData = nil
+			m.netPathLoading = true
+			return m, loadNetworkPath(s.Profile, s.Region, inst)
 		case "sg":
 			m.showDetail = "sg"
 		case "detail":
@@ -533,6 +584,85 @@ func (m *EC2Model) requestPortForward(inst internalaws.Instance, s *shared.Share
 			Alias:      inst.DisplayName(),
 			Args:       args,
 			Type:       "port_forward",
+		}
+	}
+}
+
+func loadNetworkPath(profile, region string, inst internalaws.Instance) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		clients, err := internalaws.NewClients(ctx, profile, region)
+		if err != nil {
+			return networkPathLoadedMsg{err: err}
+		}
+
+		// Fetch route tables — find the one for this subnet, fallback to main RT for VPC
+		rts, _ := internalaws.FetchRouteTables(ctx, clients.EC2)
+		var rt internalaws.RouteTable
+		for _, r := range rts {
+			for _, sid := range r.Subnets {
+				if sid == inst.SubnetID {
+					rt = r
+					break
+				}
+			}
+			if rt.ID != "" {
+				break
+			}
+		}
+		if rt.ID == "" {
+			for _, r := range rts {
+				if r.VpcID == inst.VpcID && r.IsMain {
+					rt = r
+					break
+				}
+			}
+		}
+
+		// Fetch security groups — match by VPC and name
+		allSGs, _ := internalaws.FetchSecurityGroups(ctx, clients.EC2)
+		var sgs []internalaws.SecurityGroup
+		for _, sg := range allSGs {
+			if sg.VpcID == inst.VpcID {
+				for _, instSG := range inst.SecurityGroups {
+					if sg.Name == instSG {
+						sgs = append(sgs, sg)
+					}
+				}
+			}
+		}
+
+		// Fetch NACLs — find the one for this subnet
+		nacls, _ := internalaws.FetchNetworkACLs(ctx, clients.EC2)
+		var nacl internalaws.NetworkACL
+		for _, n := range nacls {
+			for _, sid := range n.Subnets {
+				if sid == inst.SubnetID {
+					nacl = n
+					break
+				}
+			}
+			if nacl.ID != "" {
+				break
+			}
+		}
+
+		return networkPathLoadedMsg{
+			data: networkPathData{
+				VPC: internalaws.VPC{
+					VpcID:     inst.VpcID,
+					Name:      inst.VpcName,
+					CIDRBlock: inst.VpcCIDR,
+				},
+				Subnet: internalaws.Subnet{
+					SubnetID:  inst.SubnetID,
+					Name:      inst.SubnetName,
+					CIDRBlock: inst.SubnetCIDR,
+				},
+				RouteTable: rt,
+				SGs:        sgs,
+				NACL:       nacl,
+			},
 		}
 	}
 }

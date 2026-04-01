@@ -38,6 +38,7 @@ func NewActionMenu(inst aws.Instance) ActionMenuModel {
 		Actions: []Action{
 			{Key: "ssm", Label: "SSM Session (connect)"},
 			{Key: "portfwd", Label: "Port Forwarding"},
+			{Key: "netpath", Label: "Network Path"},
 			{Key: "sg", Label: "Security Groups"},
 			{Key: "detail", Label: "Instance Details"},
 			{Key: "goto_vpc", Label: "Go to VPC"},
@@ -99,6 +100,86 @@ func RenderSecurityGroups(inst aws.Instance) string {
 			b.WriteString(fmt.Sprintf("  • %s\n", sg))
 		}
 	}
+	b.WriteString("\n  Press any key to close")
+	return shared.RenderOverlay(b.String())
+}
+
+// RenderNetworkPath renders the network path overlay for an instance.
+func RenderNetworkPath(inst aws.Instance, data networkPathData) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("  Network Path — %s\n", inst.DisplayName()))
+	b.WriteString("  ──────────────────────────────────────────\n")
+
+	// VPC
+	vpcLabel := data.VPC.Name
+	if vpcLabel == "" {
+		vpcLabel = data.VPC.VpcID
+	}
+	b.WriteString(fmt.Sprintf("  VPC:     %s (%s)  %s\n", vpcLabel, data.VPC.VpcID, data.VPC.CIDRBlock))
+
+	// Subnet
+	subnetLabel := data.Subnet.Name
+	if subnetLabel == "" {
+		subnetLabel = data.Subnet.SubnetID
+	}
+	b.WriteString(fmt.Sprintf("  Subnet:  %s (%s)  %s\n", subnetLabel, data.Subnet.SubnetID, data.Subnet.CIDRBlock))
+
+	// Route Table
+	b.WriteString("\n")
+	if data.RouteTable.ID != "" {
+		rtLabel := data.RouteTable.Name
+		if rtLabel == "" {
+			rtLabel = data.RouteTable.ID
+		}
+		b.WriteString(fmt.Sprintf("  Route Table: %s (%s)\n", rtLabel, data.RouteTable.ID))
+		for _, route := range data.RouteTable.Routes {
+			b.WriteString(fmt.Sprintf("    %-16s → %s\n", route.Destination, route.Target))
+		}
+	} else {
+		b.WriteString("  Route Table: (not found)\n")
+	}
+
+	// Security Groups
+	b.WriteString("\n  Security Groups:\n")
+	if len(data.SGs) == 0 {
+		b.WriteString("    (none found)\n")
+	}
+	for _, sg := range data.SGs {
+		b.WriteString(fmt.Sprintf("    %s (%s)\n", sg.Name, sg.ID))
+		for _, rule := range sg.InboundRules {
+			b.WriteString(fmt.Sprintf("      In:  %s %s ← %s\n", rule.Protocol, rule.PortRange, rule.Source))
+		}
+		for _, rule := range sg.OutboundRules {
+			b.WriteString(fmt.Sprintf("      Out: %s %s → %s\n", rule.Protocol, rule.PortRange, rule.Source))
+		}
+	}
+
+	// NACL
+	b.WriteString("\n")
+	if data.NACL.ID != "" {
+		naclLabel := data.NACL.Name
+		if naclLabel == "" {
+			naclLabel = data.NACL.ID
+		}
+		b.WriteString(fmt.Sprintf("  NACL: %s\n", naclLabel))
+		for _, rule := range data.NACL.InboundRules {
+			ruleNum := fmt.Sprintf("%d", rule.RuleNumber)
+			if rule.RuleNumber == 32767 {
+				ruleNum = "*"
+			}
+			b.WriteString(fmt.Sprintf("    In:  %-5s %-5s %s %s\n", ruleNum, strings.ToUpper(rule.Action), rule.Protocol, rule.CIDRBlock))
+		}
+		for _, rule := range data.NACL.OutboundRules {
+			ruleNum := fmt.Sprintf("%d", rule.RuleNumber)
+			if rule.RuleNumber == 32767 {
+				ruleNum = "*"
+			}
+			b.WriteString(fmt.Sprintf("    Out: %-5s %-5s %s %s\n", ruleNum, strings.ToUpper(rule.Action), rule.Protocol, rule.CIDRBlock))
+		}
+	} else {
+		b.WriteString("  NACL: (not found)\n")
+	}
+
 	b.WriteString("\n  Press any key to close")
 	return shared.RenderOverlay(b.String())
 }

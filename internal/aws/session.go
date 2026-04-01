@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
@@ -32,6 +33,7 @@ type Clients struct {
 	ELB     *elb.Client   // Classic LB
 	ASG     *autoscaling.Client
 	CW      *cloudwatch.Client
+	CWL     *cwl.Client
 	IAM     *iam.Client
 	CF      *cloudfront.Client
 	WAF     *wafv2.Client
@@ -68,6 +70,7 @@ func NewClients(ctx context.Context, profile, region string) (*Clients, error) {
 		ELB:     elb.NewFromConfig(cfg),
 		ASG:     autoscaling.NewFromConfig(cfg),
 		CW:      cloudwatch.NewFromConfig(cfg),
+		CWL:     cwl.NewFromConfig(cfg),
 		IAM:     iam.NewFromConfig(cfg),
 		CF:      cloudfront.NewFromConfig(cfg),
 		WAF:     wafv2.NewFromConfig(cfg),

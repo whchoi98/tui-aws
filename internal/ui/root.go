@@ -199,6 +199,19 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		})
 
+	// Handle ECS Exec requests from the ECS tab
+	case tab_ecs.ECSExecRequest:
+		c := exec.Command("aws", msg.Args...)
+		return m, tea.Exec(&ssmExecCmd{cmd: c}, func(err error) tea.Msg {
+			return tab_ecs.ECSExecDoneMsg{Err: err}
+		})
+
+	// Handle ECS Exec completion — forward to the ECS tab
+	case tab_ecs.ECSExecDoneMsg:
+		tab, cmd := m.tabs[m.activeTab].Update(msg, &m.shared)
+		m.tabs[m.activeTab] = tab
+		return m, cmd
+
 	// Handle SSM session completion — record history
 	case tab_ec2.SSMSessionDoneMsg:
 		if msg.Err == nil {

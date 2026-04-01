@@ -52,7 +52,7 @@ A terminal UI for managing AWS EC2 instances, exploring VPC networking infrastru
 
 **tui-aws** is a single-binary terminal UI tool that replaces the need to juggle multiple AWS Console tabs or remember complex CLI commands. It provides:
 
-- **6 integrated views** for EC2, VPC, Subnet, Route Table, Security Group, and Connectivity Check
+- **22 integrated views** for EC2, ASG, EBS, VPC, Subnet, Routes, SG, VPCE, TGW, ELB, CloudFront, WAF, ACM, R53, RDS, S3, ECS, EKS, Lambda, CloudWatch, IAM, and Connectivity Check
 - **SSM Session Manager** integration — connect to instances without SSH keys or open security group rules
 - **Network path visualization** — trace the full path from VPC to NACL in one screen
 - **Local connectivity checker** — validate SG + Route + NACL rules between any two instances without calling AWS APIs
@@ -492,7 +492,7 @@ Sufficient for Tab 1 (EC2) with SSM connections:
 
 ### Full (all tabs)
 
-Required for all 6 tabs:
+Required for all tabs:
 
 ```json
 {
@@ -513,10 +513,51 @@ Required for all 6 tabs:
       "ec2:DescribeRouteTables",
       "ec2:DescribeSecurityGroups",
       "ec2:DescribeNetworkAcls",
+      "ec2:DescribeVolumes",
+      "ec2:DescribeTransitGateways",
+      "ec2:DescribeTransitGatewayRouteTables",
+      "ec2:SearchTransitGatewayRoutes",
       "ssm:StartSession",
       "ssm:TerminateSession",
       "ssm:DescribeInstanceInformation",
-      "sts:GetCallerIdentity"
+      "sts:GetCallerIdentity",
+      "autoscaling:DescribeAutoScalingGroups",
+      "elasticloadbalancing:DescribeLoadBalancers",
+      "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeTargetHealth",
+      "elasticloadbalancing:DescribeRules",
+      "cloudfront:ListDistributions",
+      "wafv2:ListWebACLs",
+      "wafv2:GetWebACL",
+      "wafv2:ListResourcesForWebACL",
+      "acm:ListCertificates",
+      "acm:DescribeCertificate",
+      "route53:ListHostedZones",
+      "route53:ListResourceRecordSets",
+      "rds:DescribeDBInstances",
+      "s3:ListAllMyBuckets",
+      "s3:GetBucketVersioning",
+      "s3:GetBucketEncryption",
+      "s3:GetPublicAccessBlock",
+      "ecs:ListClusters",
+      "ecs:DescribeClusters",
+      "ecs:ListServices",
+      "ecs:DescribeServices",
+      "ecs:ListTasks",
+      "ecs:DescribeTasks",
+      "ecs:DescribeTaskDefinition",
+      "ecs:ExecuteCommand",
+      "eks:ListClusters",
+      "eks:DescribeCluster",
+      "eks:ListNodegroups",
+      "eks:DescribeNodegroup",
+      "lambda:ListFunctions",
+      "cloudwatch:DescribeAlarms",
+      "logs:GetLogEvents",
+      "iam:ListUsers",
+      "iam:ListGroupsForUser",
+      "iam:ListAttachedUserPolicies"
     ],
     "Resource": "*"
   }]
@@ -768,7 +809,7 @@ session-manager-plugin --version
 
 **tui-aws**는 여러 AWS 콘솔 탭을 오가거나 복잡한 CLI 명령을 기억할 필요 없이, 터미널 하나에서 AWS 인프라를 관리할 수 있는 도구입니다.
 
-- **6개 통합 뷰** — EC2, VPC, Subnet, Route Table, Security Group, 연결성 검사
+- **22개 통합 뷰** — EC2, ASG, EBS, VPC, Subnet, Routes, SG, VPCE, TGW, ELB, CloudFront, WAF, ACM, R53, RDS, S3, ECS, EKS, Lambda, CloudWatch, IAM, 연결성 검사
 - **SSM Session Manager 통합** — SSH 키나 보안 그룹 인바운드 규칙 없이 인스턴스 접속
 - **네트워크 경로 시각화** — VPC에서 NACL까지 전체 경로를 한 화면에 표시
 - **로컬 연결성 검사기** — AWS API 호출 없이 SG + Route + NACL 규칙을 검증
@@ -1168,7 +1209,7 @@ tui-aws → DB 인스턴스 선택 → Enter → Port Forwarding
 
 ### 전체 (모든 탭)
 
-6개 탭 모두 사용:
+전체 탭 사용 (영문 섹션의 Full 권한과 동일):
 
 ```json
 {
@@ -1176,23 +1217,38 @@ tui-aws → DB 인스턴스 선택 → Enter → Port Forwarding
   "Statement": [{
     "Effect": "Allow",
     "Action": [
-      "ec2:DescribeInstances",
-      "ec2:DescribeVpcs",
-      "ec2:DescribeSubnets",
-      "ec2:DescribeInternetGateways",
-      "ec2:DescribeNatGateways",
-      "ec2:DescribeVpcPeeringConnections",
-      "ec2:DescribeTransitGatewayAttachments",
-      "ec2:DescribeVpcEndpoints",
-      "ec2:DescribeAddresses",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:DescribeRouteTables",
-      "ec2:DescribeSecurityGroups",
-      "ec2:DescribeNetworkAcls",
+      "ec2:Describe*",
+      "ec2:SearchTransitGatewayRoutes",
       "ssm:StartSession",
       "ssm:TerminateSession",
       "ssm:DescribeInstanceInformation",
-      "sts:GetCallerIdentity"
+      "sts:GetCallerIdentity",
+      "autoscaling:DescribeAutoScalingGroups",
+      "elasticloadbalancing:Describe*",
+      "cloudfront:ListDistributions",
+      "wafv2:ListWebACLs",
+      "wafv2:GetWebACL",
+      "wafv2:ListResourcesForWebACL",
+      "acm:ListCertificates",
+      "acm:DescribeCertificate",
+      "route53:ListHostedZones",
+      "route53:ListResourceRecordSets",
+      "rds:DescribeDBInstances",
+      "s3:ListAllMyBuckets",
+      "s3:GetBucket*",
+      "ecs:List*",
+      "ecs:Describe*",
+      "ecs:ExecuteCommand",
+      "eks:ListClusters",
+      "eks:DescribeCluster",
+      "eks:ListNodegroups",
+      "eks:DescribeNodegroup",
+      "lambda:ListFunctions",
+      "cloudwatch:DescribeAlarms",
+      "logs:GetLogEvents",
+      "iam:ListUsers",
+      "iam:ListGroupsForUser",
+      "iam:ListAttachedUserPolicies"
     ],
     "Resource": "*"
   }]

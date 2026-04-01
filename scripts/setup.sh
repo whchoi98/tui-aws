@@ -390,18 +390,25 @@ fi
 # ─────────────────────────────────────────────
 
 echo
-echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║            Setup Complete!                ║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
+echo -e "${CYAN}╔═══════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║             Setup Complete!                    ║${NC}"
+echo -e "${CYAN}╚═══════════════════════════════════════════════╝${NC}"
 echo
 echo -e "  ${GREEN}Start tui-aws:${NC}"
 echo -e "    ${CYAN}$BINARY${NC}"
 echo
+echo -e "  ${GREEN}Tabs (22):${NC}"
+echo -e "    EC2 ASG EBS | VPC Subnet Routes SG VPCE TGW"
+echo -e "    ELB CF WAF ACM | R53 RDS S3 | ECS EKS Lambda"
+echo -e "    CW IAM | Check"
+echo
 echo -e "  ${GREEN}Key bindings:${NC}"
-echo -e "    ${CYAN}1-6${NC}   Switch tabs (EC2/VPC/Subnets/Routes/SG/Check)"
-echo -e "    ${CYAN}p${NC}     Select AWS profile"
-echo -e "    ${CYAN}r${NC}     Select region"
-echo -e "    ${CYAN}Enter${NC} Action menu"
-echo -e "    ${CYAN}/${NC}     Search"
-echo -e "    ${CYAN}q${NC}     Quit"
+echo -e "    ${CYAN}] / [${NC}       Next / Previous tab"
+echo -e "    ${CYAN}Tab${NC}         Next tab"
+echo -e "    ${CYAN}Shift+Tab${NC}   Previous tab"
+echo -e "    ${CYAN}p${NC}           Select AWS profile"
+echo -e "    ${CYAN}r${NC}           Select region"
+echo -e "    ${CYAN}Enter${NC}       Action menu"
+echo -e "    ${CYAN}/${NC}           Search"
+echo -e "    ${CYAN}q${NC}           Quit"
 echo

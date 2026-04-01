@@ -260,7 +260,7 @@ install_go() {
 }
 
 if find_go; then
-    GO_VERSION=$("$GO_CMD" version 2>&1 | head -1 | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p' | tr -d '\n')
+    GO_VERSION=$("$GO_CMD" version 2>&1 | head -1 | awk '{for(i=1;i<=NF;i++) if($i ~ /^go[0-9]/) {gsub(/^go/,"",$i); split($i,a,"."); printf "%s.%s", a[1], a[2]}}')
     GO_VERSION=${GO_VERSION:-0.0}
     if version_gte "$GO_VERSION" "$MIN_GO_VERSION"; then
         check_ok "Go $GO_VERSION ($GO_CMD)"
@@ -343,12 +343,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
+# Set Go proxy to direct to avoid proxy.golang.org blocking by security software
+export GOPROXY=direct
+export GONOSUMCHECK="*"
+export GOFLAGS="-mod=mod"
+
 # Download dependencies
-echo -e "  ${YELLOW}Downloading dependencies...${NC}"
+echo -e "  ${YELLOW}Downloading dependencies (GOPROXY=direct)...${NC}"
 "$GO_CMD" mod download 2>&1 | tail -5 || true
 
 # Build
 BINARY="$PROJECT_DIR/tui-aws"
+echo -e "  ${YELLOW}Building...${NC}"
 "$GO_CMD" build -ldflags "-X main.version=$(grep '^VERSION' Makefile 2>/dev/null | cut -d= -f2 | tr -d ' ' || echo 'dev')" \
     -o "$BINARY" ./main.go
 

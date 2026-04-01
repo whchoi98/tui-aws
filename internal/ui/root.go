@@ -19,10 +19,15 @@ import (
 	"tui-aws/internal/ui/tab_cloudwatch"
 	"tui-aws/internal/ui/tab_ebs"
 	"tui-aws/internal/ui/tab_ec2"
+	"tui-aws/internal/ui/tab_ecs"
+	"tui-aws/internal/ui/tab_eks"
 	"tui-aws/internal/ui/tab_elb"
 	"tui-aws/internal/ui/tab_iam"
+	"tui-aws/internal/ui/tab_lambda"
 	"tui-aws/internal/ui/tab_r53"
+	"tui-aws/internal/ui/tab_rds"
 	"tui-aws/internal/ui/tab_routetable"
+	"tui-aws/internal/ui/tab_s3"
 	"tui-aws/internal/ui/tab_sg"
 	"tui-aws/internal/ui/tab_subnet"
 	"tui-aws/internal/ui/tab_tgw"
@@ -142,6 +147,16 @@ func NewRootModel(cfg config.Config, profiles []string, favs *store.Favorites, h
 			tabs[i] = tab_acm.New()
 		case shared.TabR53:
 			tabs[i] = tab_r53.New()
+		case shared.TabRDS:
+			tabs[i] = tab_rds.New()
+		case shared.TabS3:
+			tabs[i] = tab_s3.New()
+		case shared.TabECS:
+			tabs[i] = tab_ecs.New()
+		case shared.TabEKS:
+			tabs[i] = tab_eks.New()
+		case shared.TabLambda:
+			tabs[i] = tab_lambda.New()
 		case shared.TabIAM:
 			tabs[i] = tab_iam.New()
 		case shared.TabCheck:

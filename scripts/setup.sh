@@ -260,7 +260,7 @@ install_go() {
 }
 
 if find_go; then
-    GO_VERSION=$("$GO_CMD" version 2>&1 | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p')
+    GO_VERSION=$("$GO_CMD" version 2>&1 | head -1 | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p' | tr -d '\n')
     GO_VERSION=${GO_VERSION:-0.0}
     if version_gte "$GO_VERSION" "$MIN_GO_VERSION"; then
         check_ok "Go $GO_VERSION ($GO_CMD)"

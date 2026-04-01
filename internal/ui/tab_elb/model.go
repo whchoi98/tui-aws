@@ -19,6 +19,7 @@ const (
 	vsSearch
 	vsActionMenu
 	vsDetail
+	vsTGDetail // target group detail sub-view
 )
 
 // elbLoadedMsg is returned when load balancers are fetched.
@@ -32,6 +33,12 @@ type detailLoadedMsg struct {
 	listeners    []internalaws.Listener
 	targetGroups []internalaws.TargetGroup
 	err          error
+}
+
+// tgTargetsLoadedMsg is returned when target group targets are fetched.
+type tgTargetsLoadedMsg struct {
+	targets []internalaws.Target
+	err     error
 }
 
 // Action represents a menu action for a load balancer.
@@ -142,10 +149,17 @@ type ELBModel struct {
 	search     SearchModel
 	actionMenu ActionMenuModel
 
-	// Detail overlay
+	// Detail overlay — interactive: cursor selects target groups
 	showDetail    bool
 	detailLoading bool
 	detailLB      *internalaws.LoadBalancer
+	detailCursor  int // cursor within detail view (0=info, 1..N=target groups)
+	detailSection string // "" = main detail, "tg" = target group detail
+
+	// Target group detail sub-view
+	selectedTG      *internalaws.TargetGroup
+	tgTargets       []internalaws.Target
+	tgTargetsLoading bool
 }
 
 // New creates a new ELBModel.
@@ -180,12 +194,22 @@ func (m *ELBModel) Update(msg tea.Msg, s *shared.SharedState) (shared.TabModel, 
 	case detailLoadedMsg:
 		m.detailLoading = false
 		if msg.err != nil {
-			// Still show the detail with what we have
 			return m, nil
 		}
 		if m.detailLB != nil {
 			m.detailLB.Listeners = msg.listeners
 			m.detailLB.TargetGroups = msg.targetGroups
+		}
+		return m, nil
+
+	case tgTargetsLoadedMsg:
+		m.tgTargetsLoading = false
+		if msg.err != nil {
+			return m, nil
+		}
+		m.tgTargets = msg.targets
+		if m.selectedTG != nil {
+			m.selectedTG.Targets = msg.targets
 		}
 		return m, nil
 	}
@@ -197,6 +221,8 @@ func (m *ELBModel) Update(msg tea.Msg, s *shared.SharedState) (shared.TabModel, 
 		return m.updateActionMenu(msg, s)
 	case vsDetail:
 		return m.updateDetail(msg, s)
+	case vsTGDetail:
+		return m.updateTGDetail(msg, s)
 	default:
 		return m.updateTable(msg, s)
 	}
@@ -234,8 +260,10 @@ func (m *ELBModel) View(s *shared.SharedState) string {
 	// Overlay
 	overlay := ""
 	switch {
+	case m.viewState == vsTGDetail && m.selectedTG != nil:
+		overlay = RenderTGDetail(*m.selectedTG, m.tgTargets, m.tgTargetsLoading)
 	case m.showDetail && m.detailLB != nil:
-		overlay = RenderELBDetail(*m.detailLB, m.detailLoading)
+		overlay = RenderELBDetailInteractive(*m.detailLB, m.detailLoading, m.detailCursor)
 	case m.actionMenu.Active:
 		overlay = m.actionMenu.Render(s.Width)
 	}
@@ -255,7 +283,9 @@ func (m *ELBModel) ShortHelp() string {
 	case vsActionMenu:
 		return helpLine("↑↓", "Navigate", "Enter", "Select", "Esc", "Cancel")
 	case vsDetail:
-		return helpLine("any key", "Close")
+		return helpLine("↑↓", "Select TG", "Enter", "TG Detail", "Esc", "Close")
+	case vsTGDetail:
+		return helpLine("Esc", "Back to ELB")
 	default:
 		return helpLine("↑↓", "Navigate", "Enter", "Actions", "/", "Search", "R", "Refresh")
 	}
@@ -362,14 +392,80 @@ func (m *ELBModel) updateActionMenu(msg tea.Msg, s *shared.SharedState) (shared.
 	return m, nil
 }
 
-func (m *ELBModel) updateDetail(msg tea.Msg, _ *shared.SharedState) (shared.TabModel, tea.Cmd) {
-	// Any key closes the detail overlay (unless still loading)
-	if _, ok := msg.(tea.KeyPressMsg); ok {
+func (m *ELBModel) updateDetail(msg tea.Msg, s *shared.SharedState) (shared.TabModel, tea.Cmd) {
+	keyMsg, ok := msg.(tea.KeyPressMsg)
+	if !ok {
+		return m, nil
+	}
+
+	if m.detailLoading {
+		if keyMsg.String() == "esc" {
+			m.showDetail = false
+			m.detailLB = nil
+			m.viewState = vsTable
+		}
+		return m, nil
+	}
+
+	tgCount := 0
+	if m.detailLB != nil {
+		tgCount = len(m.detailLB.TargetGroups)
+	}
+
+	switch keyMsg.String() {
+	case "esc":
 		m.showDetail = false
 		m.detailLB = nil
+		m.detailCursor = 0
 		m.viewState = vsTable
+	case "up", "k":
+		if m.detailCursor > 0 {
+			m.detailCursor--
+		}
+	case "down", "j":
+		if m.detailCursor < tgCount-1 {
+			m.detailCursor++
+		}
+	case "enter":
+		if tgCount > 0 && m.detailCursor < tgCount {
+			tg := m.detailLB.TargetGroups[m.detailCursor]
+			m.selectedTG = &tg
+			m.tgTargets = nil
+			m.tgTargetsLoading = true
+			m.viewState = vsTGDetail
+			return m, m.loadTGTargets(s, tg.ARN)
+		}
 	}
 	return m, nil
+}
+
+func (m *ELBModel) updateTGDetail(msg tea.Msg, _ *shared.SharedState) (shared.TabModel, tea.Cmd) {
+	keyMsg, ok := msg.(tea.KeyPressMsg)
+	if !ok {
+		return m, nil
+	}
+
+	switch keyMsg.String() {
+	case "esc":
+		m.selectedTG = nil
+		m.tgTargets = nil
+		m.viewState = vsDetail
+	}
+	return m, nil
+}
+
+func (m *ELBModel) loadTGTargets(s *shared.SharedState, tgARN string) tea.Cmd {
+	profile := s.Profile
+	region := s.Region
+	return func() tea.Msg {
+		ctx := context.Background()
+		clients, err := internalaws.NewClients(ctx, profile, region)
+		if err != nil {
+			return tgTargetsLoadedMsg{err: err}
+		}
+		targets, err := internalaws.FetchTargets(ctx, clients.ELBv2, tgARN)
+		return tgTargetsLoadedMsg{targets: targets, err: err}
+	}
 }
 
 // --- Helpers ---

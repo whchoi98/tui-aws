@@ -45,6 +45,52 @@ type TargetGroup struct {
 	TargetType  string // instance, ip, lambda, alb
 	HealthCheck string // healthy/unhealthy summary
 	VpcID       string
+	Targets     []Target // populated on demand
+}
+
+// Target represents a registered target in a target group.
+type Target struct {
+	ID     string // instance ID, IP, or Lambda ARN
+	Port   int
+	AZ     string
+	Health string // healthy, unhealthy, draining, initial, unused
+	Reason string // health check failure reason
+}
+
+// FetchTargets returns the registered targets and their health for a target group.
+func FetchTargets(ctx context.Context, elbv2Client *elbv2.Client, tgARN string) ([]Target, error) {
+	out, err := elbv2Client.DescribeTargetHealth(ctx, &elbv2.DescribeTargetHealthInput{
+		TargetGroupArn: aws.String(tgARN),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	targets := make([]Target, 0, len(out.TargetHealthDescriptions))
+	for _, desc := range out.TargetHealthDescriptions {
+		t := Target{}
+		if desc.Target != nil {
+			t.ID = aws.ToString(desc.Target.Id)
+			if desc.Target.Port != nil {
+				t.Port = int(aws.ToInt32(desc.Target.Port))
+			}
+			if desc.Target.AvailabilityZone != nil {
+				t.AZ = aws.ToString(desc.Target.AvailabilityZone)
+			}
+		}
+		if desc.TargetHealth != nil {
+			t.Health = string(desc.TargetHealth.State)
+			t.Reason = string(desc.TargetHealth.Reason)
+			if desc.TargetHealth.Description != nil {
+				reason := aws.ToString(desc.TargetHealth.Description)
+				if reason != "" {
+					t.Reason = reason
+				}
+			}
+		}
+		targets = append(targets, t)
+	}
+	return targets, nil
 }
 
 // TypeLabel returns a short display label for the load balancer type.
